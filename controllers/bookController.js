@@ -4,6 +4,7 @@ const Genre = require("../models/genre");
 const BookInstance = require("../models/bookinstance");
 
 const async = require("async");
+const { nextTick } = require("async");
 
 exports.index = (req, res) => {
   async.parallel(
@@ -35,8 +36,17 @@ exports.index = (req, res) => {
 };
 
 // Display list of all books.
-exports.book_list = (req, res) => {
-  res.send("NOT IMPLEMENTED: Book list");
+exports.book_list = (req, res, next) => {
+  Book.find({}, "title author")
+    .sort({title: 1})
+    .populate("author")
+    .exec(function (err, list_books) {
+      if (err) {
+        return next(err);
+      }
+      // Successful, so render
+      res.render("book_list", { title: "Book List", book_list: list_books });
+    });
 };
 
 // Display detail page for a specific book.
