@@ -196,7 +196,7 @@ exports.genre_update_post = [
   // Validate and Sanitize all data
   body("name", "Name of genre must not be empty")
     .trim()
-    .isLength({ min: 1 })
+    .isLength({ min: 2 })
     .escape(),
   // Process request after validation and sanitization
   (req, res, next) => {
@@ -211,24 +211,11 @@ exports.genre_update_post = [
 
     if(!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
-      async.parallel(
-        {
-          books(callback) {
-            Genre.find(callback);
-          },
-        },
-        (err, results) => {
-          if (err) {
-            return next(err);
-          }
-
-          res.render("genre_form", {
-            title: "Update Genre",
-            genre,
-            errors: errors.array(),
-          });
-        }
-      );
+      res.render("genre_form", {
+        title: "Update Genre",
+        genre,
+        errors: errors.array(),
+      });
       return;
     }
 
