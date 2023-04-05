@@ -2,6 +2,7 @@ const Genre = require("../models/genre");
 const Book = require("../models/book");
 const async = require("async");
 const { body, validationResult } = require("express-validator");
+const { findById } = require("../models/bookinstance");
 
 // Display list of all Genre.
 exports.genre_list = (req, res, next) => {
@@ -167,10 +168,78 @@ exports.genre_delete_post = (req, res, next) => {
 
 // Display Genre update form on GET.
 exports.genre_update_get = (req, res, next) => {
-  res.send("NOT IMPLEMENTED: Genre update GET");
+  async.parallel({
+    genre(callback) {
+      Genre.findById(req.params.id).exec(callback);
+    },
+  }, 
+  (err, results) => {
+    if(err) {
+      return next(err);
+    }
+    if(results.genre == null) {
+      // No result
+      const err = new Error("Genre not found");
+      err.status(404);
+      return next(err);
+    }
+    // Success
+    res.render("genre_form", {
+      title: "Genre Update",
+      genre: results.genre,
+    });
+  });
 };
 
 // Handle Genre update on POST.
-exports.genre_update_post = (req, res, next) => {
-  res.send("NOT IMPLEMENTED: Genre update POST");
-};
+exports.genre_update_post = [
+  // Validate and Sanitize all data
+  body("name", "Name of genre must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  // Process request after validation and sanitization
+  (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    // Create a Genre object with escaped/trimmed data and old id
+    const genre = new Genre({
+      name: req.body.name,
+      _id: req.params.id,
+    });
+
+    if(!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/error messages.
+      async.parallel(
+        {
+          books(callback) {
+            Genre.find(callback);
+          },
+        },
+        (err, results) => {
+          if (err) {
+            return next(err);
+          }
+
+          res.render("genre_form", {
+            title: "Update Genre",
+            genre,
+            errors: errors.array(),
+          });
+        }
+      );
+      return;
+    }
+
+    // Data form is valid. Update the record.
+    Genre.findByIdAndUpdate(req.params.id, genre, {}, (err, theGenre) => {
+      if(err) {
+        return next(err);
+      }
+
+      // Successful: redirect to book instance detail page.
+      res.redirect(theGenre.url);
+    });
+  }
+]
