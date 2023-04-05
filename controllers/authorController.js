@@ -1,7 +1,8 @@
 const Author = require("../models/author");
 const Book = require("../models/book");
 const async = require("async");
-const { body, validationResult } = require("express-validator")
+const { body, validationResult } = require("express-validator");
+const author = require("../models/author");
 
 // Display list of all Authors.
 exports.author_list = (req, res, next) => {
@@ -181,11 +182,73 @@ exports.author_delete_post = (req, res, next) => {
 };
 
 // Display Author update form on GET.
-exports.author_update_get = (req, res) => {
-    res.send("NOT IMPLEMENTED: Author update GET");
+exports.author_update_get = (req, res, next) => {
+  async.parallel({
+    author(callback) {
+      Author.findById(req.params.id).exec(callback);
+    },
+  },
+  (err, results) => {
+    if (err) {
+      return next(err);
+    }
+    if (results.author == null) {
+      // No results.
+      const err = new Error("Author not found");
+      err.status = 404;
+      return next(err);
+    }
+    // Success.
+    res.render("author_form", {
+      title: "Update Author",
+      author: results.author,
+    });
+  });
 };
 
 // Handle Author update on POST.
-exports.author_update_post = (req, res) => {
-    res.send("NOT IMPLEMENTED: Author update POST");
-};
+exports.author_update_post = [
+  // Validate and Sanitize all data
+  body('first_name', 'First name must not be empty')
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body('family_name', 'Family name must not be empty')
+    .trim()
+    .isLength({ min: 1})
+    .escape(),
+  // Process request after validation and sanitization
+  (req, res, next) => {
+    // Extract the validation errors from a request
+    const errors = validationResult(req);
+
+    // Create a Author object with escaped/trimmed data and old id
+    const author = new Author({
+      first_name: req.body.first_name,
+      family_name: req.body.family_name,
+      date_of_brith: req.body.date_of_birth,
+      date_of_death: req.body.date_of_death,
+      _id: req.params.id,
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/error messages.
+      res.render("author_form", {
+        title: "Update Author",
+        author,
+        errors: errors.array(),
+      });
+      return;
+    }
+
+    // Data from is valid. Update the record.
+    Author.findByIdAndUpdate(req.params.id, author, {}, (err, theAuthor) => {
+      if(err) {
+        return next(err);
+      }
+
+      // Successful: redirect to author detail page.
+      res.redirect(theAuthor.url);
+    });
+  },
+]

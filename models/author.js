@@ -46,5 +46,19 @@ AuthorSchema.virtual("date_of_death_formatted").get(function () {
         '';
 });
 
+// Virtual Property date of birth as YYYY_MM_DD format
+AuthorSchema.virtual("date_of_birth_YYYY_MM_DD").get(function () {
+    return this.date_of_birth ?
+        DateTime.fromJSDate(this.date_of_birth).toISODate() :
+        '';
+});
+
+// Virtual Property date of death as YYYY_MM_DD format
+AuthorSchema.virtual("date_of_death_YYYY_MM_DD").get(function () {
+    return this.date_of_birth ?
+        DateTime.fromJSDate(this.date_of_death).toISODate() :
+        '';
+});
+
 // Export model
 module.exports = mongoose.model("Author", AuthorSchema);
