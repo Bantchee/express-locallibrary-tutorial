@@ -27,7 +27,7 @@ app.use(helmet());
 const mongoose = require("mongoose");
 mongoose.set('strictQuery', false);
 // Replace user and password with env variables
-const mongoDB = process.env.MONGODB_URL;
+const mongoDB = process.env.PRODUCTION_MONGODB_URL || process.env.MONGODB_URL;
 
 main().catch(err => console.log(err));
 async function main() {
