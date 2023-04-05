@@ -219,7 +219,7 @@ exports.bookinstance_update_post = [
     });
 
     if (!errors.isEmpty()) {
-      // There are errors. Render from again with sanitized values/error messages.
+      // There are errors. Render form again with sanitized values/error messages.
 
       // Get all books for form
       async.parallel(
